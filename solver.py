@@ -40,11 +40,10 @@ problem.addVariable('b', [3, 4])
 problem.addVariable('c', [4, 5, 6])
 problem.addVariable('d', [4, 3, 8])
 problem.addVariable('e', [4, 3, 8])
+problem.addVariable('e', [4, 3, 8])
 
 problem.addConstraint(equals, ['a', 'b'])
 problem.addConstraint(greaterThan, ['c', 'b'])
 problem.addConstraint(lessThan, ['c', 'd'])
 problem.addConstraint(equals, ['e', 'd'])
 solved = problem.solve()  # true or false
-if not solved:
-    print "FAILURE"

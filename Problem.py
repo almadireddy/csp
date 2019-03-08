@@ -3,11 +3,14 @@ class Problem:
         self.variables = {}
         self.constraints = []
         self.forward_checking = forward_checking
+        self.call_depth = 0
 
     # add a variable to solve for
     def addVariable(self, variable, domain):
-        self.variables[variable] = (domain, domain)       # variable is variableName:(domain, remaining Domain)
-
+        if not variable in self.variables:
+            self.variables[variable] = (domain, domain)       # variable is variableName:(domain, remaining Domain)
+        else:
+            print "u dumb, thats a duplicate variable skipping."
 
     # add a constraint function for variables
     # constraint looks like (constraintFunction, variables to constrain)
@@ -30,6 +33,8 @@ class Problem:
         # base case
         if len(assignments) == len(self.variables):
             if self.goalTest(assignments):
+                if self.call_depth < 30:
+                    self.print_assignments(assignments, 'solution')
                 return assignments
             else:
                 return False
@@ -40,9 +45,12 @@ class Problem:
                 assignments[var] = value
                 result = self.solve_recursive(assignments)
 
-                print assignments
                 if result is not False:
                     return result
+
+                if self.call_depth < 30:
+                    self.print_assignments(assignments, 'failure')
+                    self.call_depth += 1
 
                 assignments.pop(var)
         return False
@@ -101,3 +109,12 @@ class Problem:
                 return False                    # if constraint doesnt hold return false
 
         return True
+
+    def print_assignments(self, assignments, status):
+        print str(self.call_depth + 1) + '.',
+
+        for a in assignments:
+            print str(a) + '=' + str(assignments[a]) + ',',
+
+        print status
+
