@@ -7,19 +7,18 @@ class Problem:
 
     # add a variable to solve for
     def addVariable(self, variable, domain):
-        if not variable in self.variables:
+        if variable not in self.variables:
             self.variables[variable] = (domain, domain)       # variable is variableName:(domain, remaining Domain)
         else:
-            print "u dumb, thats a duplicate variable skipping."
+            print "u dumb, that's a duplicate variable im skipping."
 
     # add a constraint function for variables
     # constraint looks like (constraintFunction, variables to constrain)
     def addConstraint(self, constraint_function, variables):
         self.constraints.append((constraint_function, variables))
 
-
     # call to start the solver
-    # return true or false
+    # return dictionary of assignments or false
     def solve(self):
         assignments = {}
         if self.solve_recursive(assignments):
@@ -29,6 +28,7 @@ class Problem:
 
     # the recursive part of the solver
     # performs backtracking search
+    # this maps almost exactly to pseudocode in slides
     def solve_recursive(self, assignments):
         # base case
         if len(assignments) == len(self.variables):
@@ -39,8 +39,8 @@ class Problem:
             else:
                 return False
 
-        var = self.select_unassigned_variable(assignments)
-        for value in self.order_domain_values(var):
+        var = self.select_unassigned_variable(assignments)  # complete this function
+        for value in self.order_domain_values(var):         # complete this function
             if self.check_consistency(var, value, assignments):
                 assignments[var] = value
                 result = self.solve_recursive(assignments)
@@ -53,9 +53,17 @@ class Problem:
                     self.call_depth += 1
 
                 assignments.pop(var)
+
         return False
 
     def select_unassigned_variable(self, assignments):
+        # TODO: finish this algorithm that will select the variable to assign next,
+        #       based on the most constrained variable heuristic
+        #       and break ties with the most constraining variable heuristic
+
+        # There is a spot to store the remaining possible domain values built into the object stored
+        # in the self.variables which is a dictionary of
+        # variable name mapped to these: (domain, remaining Domain), modify only that second one
         unassigned = []
         for a in self.variables:
             if a not in assignments:
@@ -68,6 +76,13 @@ class Problem:
         # self.variables[var] is (domain, remainingDomain)
         # we return the remaining domain
         # (for now just as-is without ordering)
+        constraints = []    # the constraints involving this variable
+
+        for a in self.constraints:
+            if var in a[1]:  # if the variable is in the listed arguments for the constraint
+                constraints.append(a)
+        # TODO: finish this algorithm that will order the domain values,
+        #       which are contained in self.variables[var][1]
         return self.variables[var][1]
 
     def check_consistency(self, var, value, assignments):
@@ -110,11 +125,12 @@ class Problem:
 
         return True
 
+
     def print_assignments(self, assignments, status):
+        # this function prints in the proper way
         print str(self.call_depth + 1) + '.',
 
         for a in assignments:
             print str(a) + '=' + str(assignments[a]) + ',',
 
         print status
-

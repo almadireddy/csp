@@ -18,32 +18,57 @@ else:
 
 # all checks have worked and args contains correct input
 
-varFile = args[1]           # name of var file
-constraintFile = args[2]    # name of constraint file
+# set up names to open and make problem object
+varFileName = args[1]           # name of var file
+constraintFileName = args[2]    # name of constraint file
 checkingMethod = True if args[3] == 'fc' else False    # name of checking method
 
-def equals(tup):
-    return tup[0] == tup[1]
-
-def greaterThan(tup):
-    return tup[0] > tup[1]
-
-def lessThan(tup):
-    return tup[0] < tup[1]
-
-def notEquals(tup):
-    return tup[0] != tup[1]
-
 problem = Problem(forward_checking=checkingMethod)
-problem.addVariable('a', [1, 2, 3])
-problem.addVariable('b', [3, 4])
-problem.addVariable('c', [4, 5, 6])
-problem.addVariable('d', [4, 3, 8])
-problem.addVariable('e', [4, 3, 8])
-problem.addVariable('e', [4, 3, 8])
 
-problem.addConstraint(equals, ['a', 'b'])
-problem.addConstraint(greaterThan, ['c', 'b'])
-problem.addConstraint(lessThan, ['c', 'd'])
-problem.addConstraint(equals, ['e', 'd'])
+# open and add variable from var file to the problem
+varFile = open(varFileName, 'r')
+for line in varFile:
+    var = line[0]
+    domain = line[3:].strip('\n').split(' ')
+    if '' in domain:
+        domain.remove('')
+    problem.addVariable(var, domain)
+
+varFile.close()
+
+# define the functions for each of the possible constraints to check whether constraint is held
+# they all take an array of values to apply to the two variables in the constraint
+# look at check_consistency() in Problem.py
+def equals(arr):
+    return arr[0] == arr[1]
+
+def greaterThan(arr):
+    return arr[0] > arr[1]
+
+def lessThan(arr):
+    return arr[0] < arr[1]
+
+def notEquals(arr):
+    return arr[0] != arr[1]
+
+# dictionary for switch based on input
+funcSelector = {
+    "=": equals,
+    ">": greaterThan,
+    "<": lessThan,
+    "!": notEquals
+}
+
+# open and read in from constraint file, and add to Problem
+conFile = open(constraintFileName, 'r')
+for line in conFile:
+    lin = line.strip('\n').split(" ")
+    # lin now looks like ['X', '>', 'Y']
+
+    arg = [lin[0], lin[2]]  # the arguments to pass into the addConstraint
+    operator = lin[1]     # the constraint function that will be called
+    problem.addConstraint(funcSelector.get(str(operator)), arg)
+conFile.close()
+
+# solve it, solved will contain the assignments or false
 solved = problem.solve()  # true or false
