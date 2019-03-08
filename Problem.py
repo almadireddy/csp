@@ -4,24 +4,30 @@ class Problem:
         self.constraints = []
         self.forwardChecking = forwardChecking
 
+
     def addVariable(self, variable, domain):
-        self.variables[variable] = domain       # variable:domain is key:value
+        self.variables[variable] = (domain, domain)       # variable:domain is key:(domain, remaining Domain)
+
 
     # constraint looks like (constraintFunction, variables to constrain)
-    def addConstraint(self, constraintFunction, variables):
-        self.constraints.append((constraintFunction, variables))
+    def addConstraint(self, constraint_function, variables):
+        self.constraints.append((constraint_function, variables))
 
+    # the main entry point
     def solve(self):
         assignments = {}
-        self.solveRecursive(assignments)
+        return self.solveRecursive(assignments)
+
 
     def solveRecursive(self, assignments):
         if self.goalTest(assignments):
             return assignments
-        var = self.selectVariable()
+        var = self.selectUnassignedVariable()
 
-    def selectVariable(self):
+
+    def selectUnassignedVariable(self):
         return self.variables[0]
+
 
     def goalTest(self, assignments):
         for key in self.variables:
@@ -35,6 +41,7 @@ class Problem:
                 return False                    # if constraint doesnt hold return false
 
         return True
+
 
     def orderDomain(self, var):
         return self.variables[var]
