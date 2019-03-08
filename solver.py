@@ -22,21 +22,29 @@ varFile = args[1]           # name of var file
 constraintFile = args[2]    # name of constraint file
 checkingMethod = True if args[3] == 'fc' else False    # name of checking method
 
-def equals(a, b):
-    return a == b
+def equals(tup):
+    return tup[0] == tup[1]
 
-def greaterThan(a, b):
-    return a > b
+def greaterThan(tup):
+    return tup[0] > tup[1]
 
-def lessThan(a, b):
-    return a < b
+def lessThan(tup):
+    return tup[0] < tup[1]
 
-def notEquals(a, b):
-    return a != b
+def notEquals(tup):
+    return tup[0] != tup[1]
 
-problem = Problem(forwardChecking=checkingMethod)
+problem = Problem(forward_checking=checkingMethod)
 problem.addVariable('a', [1, 2, 3])
-problem.addVariable('b', [2, 3, 4])
-problem.addConstraint(equals, ['a', 'b'])
+problem.addVariable('b', [3, 4])
+problem.addVariable('c', [4, 5, 6])
+problem.addVariable('d', [4, 3, 8])
+problem.addVariable('e', [4, 3, 8])
 
+problem.addConstraint(equals, ['a', 'b'])
+problem.addConstraint(greaterThan, ['c', 'b'])
+problem.addConstraint(lessThan, ['c', 'd'])
+problem.addConstraint(equals, ['e', 'd'])
 solved = problem.solve()  # true or false
+if not solved:
+    print "FAILURE"

@@ -6,7 +6,7 @@ class Problem:
 
     # add a variable to solve for
     def addVariable(self, variable, domain):
-        self.variables[variable] = (domain, domain)       # variable:domain is key:(domain, remaining Domain)
+        self.variables[variable] = (domain, domain)       # variable is variableName:(domain, remaining Domain)
 
 
     # add a constraint function for variables
@@ -36,15 +36,15 @@ class Problem:
 
         var = self.select_unassigned_variable(assignments)
         for value in self.order_domain_values(var):
-            if self.check_consistency(var, value):
+            if self.check_consistency(var, value, assignments):
                 assignments[var] = value
                 result = self.solve_recursive(assignments)
 
+                print assignments
                 if result is not False:
                     return result
 
                 assignments.pop(var)
-
         return False
 
     def select_unassigned_variable(self, assignments):
@@ -62,8 +62,29 @@ class Problem:
         # (for now just as-is without ordering)
         return self.variables[var][1]
 
-    def check_consistency(self, var, value):
+    def check_consistency(self, var, value, assignments):
         # this will check whether the assigned value is consistent
+        constraints = []
+
+        for a in self.constraints:
+            if var in a[1]:             # if the variable is in the listed arguments for the constraint
+                constraints.append(a)
+
+        for con in constraints:             # for each constraint involving this variable
+            index_of_var = con[1].index(var)
+            index_of_other_var = 0 if index_of_var is 1 else 1
+            other_var = con[1][index_of_other_var]
+
+            if con[1][1] in assignments:
+                to_pass = []
+                to_pass[index_of_var] = value
+                to_pass[index_of_other_var] = assignments[other_var]
+                if not con[0](to_pass):   # check if value is consistent
+                    return False
+
+            else:
+                return True
+
         return True
 
 
@@ -75,7 +96,8 @@ class Problem:
         for constraint in self.constraints:
             v1 = assignments[constraint[1][0]]  # getting assigned value by name of variable
             v2 = assignments[constraint[1][1]]
-            if not constraint(v1, v2):
+
+            if not constraint[0]([v1, v2]):
                 return False                    # if constraint doesnt hold return false
 
         return True
