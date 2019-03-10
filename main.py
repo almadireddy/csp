@@ -28,10 +28,11 @@ problem = Problem(forward_checking=checkingMethod)
 # open and add variable from var file to the problem
 varFile = open(varFileName, 'r')
 for line in varFile:
-    var = line[0]
+    var = line[0].strip()
     domain = line[3:].strip('\n').split(' ')
     if '' in domain:
         domain.remove('')
+    domain = map(int, domain)
     problem.addVariable(var, domain)
 
 varFile.close()
@@ -63,12 +64,17 @@ funcSelector = {
 conFile = open(constraintFileName, 'r')
 for line in conFile:
     lin = line.strip('\n').split(" ")
+    for l in lin:
+        i = lin.index(l)
+        lin[i] = l.strip()
     # lin now looks like ['X', '>', 'Y']
 
     arg = [lin[0], lin[2]]  # the arguments to pass into the addConstraint
     operator = lin[1]     # the constraint function that will be called
     problem.addConstraint(funcSelector.get(str(operator)), arg)
 conFile.close()
+
+# problem.addConstraint(lambda arr: arr[0] == (2*int(arr[1])), ['B', 'D'])
 
 # solve it, solved will contain the assignments or false
 solved = problem.solve()  # true or false

@@ -9,7 +9,7 @@ class Problem:
     # add a variable to solve for
     def addVariable(self, variable, domain):
         if variable not in self.variables:
-            self.variables[variable] = (domain, domain)       # variable is variableName:(domain, remaining Domain)
+            self.variables[variable] = [domain, domain]       # variable is variableName:(domain, remaining Domain)
         else:
             print "u dumb, that's a duplicate variable im skipping."
 
@@ -52,20 +52,64 @@ class Problem:
             if self.check_consistency(var, value, assignments):
                 assignments[var] = value
                 assignments_to_print.append((var, value))
-                result = self.solve_recursive(assignments, assignments_to_print)
-                if result is not False:
-                    return result
+
+                if self.forward_checking:
+                    fc_holds = self.forward_check(var, assignments)
+                    if fc_holds:
+                        result = self.solve_recursive(assignments, assignments_to_print)
+                        if result is not False:
+                            return result
+                    else:
+                        for v in self.variables:
+                            self.variables[v][1] = self.variables[v][0][:]
+                        self.print_assignments(assignments_to_print, 'failure')
+                        self.call_depth += 1
+                else:
+                    result = self.solve_recursive(assignments, assignments_to_print)
+                    if result is not False:
+                        return result
 
                 del assignments[var]
                 assignments_to_print.pop(-1)
+
             else:
                 assignments_to_print.append((var, value))
                 self.print_assignments(assignments_to_print, 'failure')
-                self.call_depth +=1
+                self.call_depth += 1
                 assignments_to_print.pop(-1)
 
         return False
 
+    def forward_check(self, var, assignments):
+        constraints = self.get_constraints(var)
+        unassigned_constraints = []
+        for c in constraints:
+            if c[1][0] not in assignments or c[1][1] not in assignments:
+                unassigned_constraints.append(c)
+
+        for unassigned in unassigned_constraints:
+            index_of_original = unassigned[1].index(var)
+            index_of_other = 0 if index_of_original is 1 else 1
+            other_var = unassigned[1][index_of_other]
+
+            original_domain_of_this_variable = self.variables[other_var][1][:]
+            remaining_domain_for_this_variable = []
+
+            for original_v in original_domain_of_this_variable:
+                to_pass = [0, 0]
+                to_pass[index_of_other] = int(original_v)
+                to_pass[index_of_original] = int(assignments[var])
+                if unassigned[0](to_pass):
+                    remaining_domain_for_this_variable.append(original_v)
+
+            if len(remaining_domain_for_this_variable) > 0:
+                self.variables[other_var][1] = remaining_domain_for_this_variable[:]
+                continue
+            else:
+                self.variables[other_var][1] = original_domain_of_this_variable[:]
+                return False
+
+        return True
 
     def select_unassigned_variable(self, assignments):
         # the most constrained variable
@@ -77,6 +121,7 @@ class Problem:
             new_remaining_domain = []
             remaining_domain = self.variables[u][1]
             for val in remaining_domain:
+                val = int(val)
                 if self.check_consistency(u, val, assignments):
                     new_remaining_domain.append(val)
 
@@ -116,11 +161,7 @@ class Problem:
         return to_alphabetize[0][0]
 
 
-
     def order_domain_values(self, var, assignments):
-        # self.variables[var] is (domain, remainingDomain)
-        # we return the remaining domain
-        # (for now just as-is without ordering)
         constraints = self.get_constraints(var)
         domain = self.variables[var][1]
 
@@ -138,11 +179,14 @@ class Problem:
             for u in unassigned_constraints:
                 index_of_original = u[1].index(var)
                 index_of_other = 0 if index_of_original is 1 else 1
-                original_domain_of_this_variable = self.variables[u[1][index_of_other]][0]
+                original_domain_of_this_variable = self.variables[u[1][index_of_other]][1]
                 remaining_domain_for_this_variable = []
 
                 for v in original_domain_of_this_variable:
-                    if u[0]([val, v]) or self.check_consistency(u[1][index_of_other], v, test_assignments):
+                    to_pass = [0, 0]
+                    to_pass[index_of_original] = val
+                    to_pass[index_of_other] = v
+                    if u[0](to_pass):  # or self.check_consistency(u[1][index_of_other], v, test_assignments):
                         remaining_domain_for_this_variable.append(v)
 
                 sum_for_this_val += len(remaining_domain_for_this_variable)
@@ -167,9 +211,6 @@ class Problem:
                 to_pass[index_of_other_var] = assignments[other_var]
                 if not con[0](to_pass):   # check if value is consistent
                     return False
-
-            else:
-                return True
 
         return True
 
