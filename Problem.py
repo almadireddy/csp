@@ -45,10 +45,10 @@ class Problem:
                 return False
 
         var = self.select_unassigned_variable(assignments)
-        print var
-        print " "
-        for v in self.order_domain_values(var, assignments):         # complete this function
-            value = v[0]
+        ordered_values = self.order_domain_values(var, assignments)
+        for v in ordered_values:         # complete this function
+            value = int(v[0])
+
             if self.check_consistency(var, value, assignments):
                 assignments[var] = value
                 assignments_to_print.append((var, value))
@@ -56,11 +56,12 @@ class Problem:
                 if result is not False:
                     return result
 
-                # if self.call_depth < 30:
-                self.print_assignments(assignments_to_print, 'failure')
-                self.call_depth += 1
-
                 del assignments[var]
+                assignments_to_print.pop(-1)
+            else:
+                assignments_to_print.append((var, value))
+                self.print_assignments(assignments_to_print, 'failure')
+                self.call_depth +=1
                 assignments_to_print.pop(-1)
 
         return False
@@ -79,12 +80,10 @@ class Problem:
                 if self.check_consistency(u, val, assignments):
                     new_remaining_domain.append(val)
 
-            print u, remaining_domain, new_remaining_domain
-
             to_pick_from.append([u, remaining_domain, 0])
 
         to_pick_from.sort(key=lambda t: len(t[1]))
-        print "--", to_pick_from
+
         # the most constraining out of these
         to_tie_break = []
         min_val = len(to_pick_from[0][1])
@@ -92,21 +91,19 @@ class Problem:
         for a in to_pick_from:
             if len(a[1]) is min_val:
                 to_tie_break.append(a)
-        print "  --", to_tie_break
 
         for var in to_tie_break:
             unassigned_constraints = []
             constraints = self.get_constraints(var[0])
 
             for c in constraints:
-                print "    -- ", var, ":", c
                 if c[1][0] not in assignments and c[1][1] not in assignments:
                     unassigned_constraints.append(c)
-            print "    --", "unassigned: ", unassigned_constraints
+
             var[2] = len(unassigned_constraints)
 
         to_tie_break.sort(key=lambda t: int(t[2]), reverse=True)
-        print to_tie_break
+
         max_val = to_tie_break[0][2]
         to_alphabetize = []
 
@@ -145,13 +142,13 @@ class Problem:
                 remaining_domain_for_this_variable = []
 
                 for v in original_domain_of_this_variable:
-                    if self.check_consistency(u[1][index_of_other], v, test_assignments):
+                    if u[0]([val, v]) or self.check_consistency(u[1][index_of_other], v, test_assignments):
                         remaining_domain_for_this_variable.append(v)
 
                 sum_for_this_val += len(remaining_domain_for_this_variable)
             to_pick_from.append((val, sum_for_this_val))
 
-        to_pick_from.sort(key=lambda t: t[1])
+        to_pick_from.sort(key=lambda t: t[1], reverse=True)
         return to_pick_from
 
 
@@ -215,7 +212,10 @@ class Problem:
         # this function prints in the proper way
         print str(self.call_depth + 1) + '.',
 
+        string = ""
         for a in assignments:
-            print str(a[0]) + '=' + str(a[1]) + ',',
+            string += str(a[0]) + '=' + str(a[1]) + ', '
+        string = string[0:-2]
 
+        print string + " ",
         print status
