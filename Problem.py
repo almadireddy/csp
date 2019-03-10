@@ -4,7 +4,7 @@ class Problem:
         self.constraints = []
         self.forward_checking = forward_checking
         self.call_depth = 0
-
+        self.debug_output = True
 
     # add a variable to solve for
     def addVariable(self, variable, domain):
@@ -24,7 +24,8 @@ class Problem:
     # return dictionary of assignments or false
     def solve(self):
         assignments = {}
-        if self.solve_recursive(assignments):
+        printed_assignments = []
+        if self.solve_recursive(assignments, printed_assignments):
             return assignments
         else:
             return False
@@ -33,61 +34,57 @@ class Problem:
     # the recursive part of the solver
     # performs backtracking search
     # this maps almost exactly to pseudocode in slides
-    def solve_recursive(self, assignments):
+    def solve_recursive(self, assignments, assignments_to_print):
         # base case
         if len(assignments) == len(self.variables):
             if self.goalTest(assignments):
                 # if self.call_depth < 30:
-                self.print_assignments(assignments, 'solution')
+                self.print_assignments(assignments_to_print, 'solution')
                 return assignments
             else:
                 return False
 
-        var = self.select_unassigned_variable(assignments)  # complete this function
-        for value in self.order_domain_values(var):         # complete this function
+        var = self.select_unassigned_variable(assignments)
+        print var
+        print " "
+        for v in self.order_domain_values(var, assignments):         # complete this function
+            value = v[0]
             if self.check_consistency(var, value, assignments):
                 assignments[var] = value
-                result = self.solve_recursive(assignments)
-
+                assignments_to_print.append((var, value))
+                result = self.solve_recursive(assignments, assignments_to_print)
                 if result is not False:
-                    remaining_domains = self.variables[var][1]
-                    constraints = self.get_constraints(var)
-
                     return result
 
                 # if self.call_depth < 30:
-                self.print_assignments(assignments, 'failure')
+                self.print_assignments(assignments_to_print, 'failure')
                 self.call_depth += 1
 
-                assignments.pop(var)
+                del assignments[var]
+                assignments_to_print.pop(-1)
 
         return False
 
 
     def select_unassigned_variable(self, assignments):
+        # the most constrained variable
         unassigned = self.get_unassigned(assignments)
-        valid_constraints = []
 
         to_pick_from = []
 
         for u in unassigned:
-            constraints = self.get_constraints(u)
-
-            for c in constraints:
-                if c[1][0] in assignments or c[1][1] in assignments:
-                    valid_constraints.append(c)
-
             new_remaining_domain = []
             remaining_domain = self.variables[u][1]
-
             for val in remaining_domain:
                 if self.check_consistency(u, val, assignments):
                     new_remaining_domain.append(val)
 
-            to_pick_from.append([u, new_remaining_domain, 0])
+            print u, remaining_domain, new_remaining_domain
+
+            to_pick_from.append([u, remaining_domain, 0])
 
         to_pick_from.sort(key=lambda t: len(t[1]))
-
+        print "--", to_pick_from
         # the most constraining out of these
         to_tie_break = []
         min_val = len(to_pick_from[0][1])
@@ -95,33 +92,67 @@ class Problem:
         for a in to_pick_from:
             if len(a[1]) is min_val:
                 to_tie_break.append(a)
+        print "  --", to_tie_break
 
         for var in to_tie_break:
             unassigned_constraints = []
             constraints = self.get_constraints(var[0])
 
             for c in constraints:
+                print "    -- ", var, ":", c
                 if c[1][0] not in assignments and c[1][1] not in assignments:
                     unassigned_constraints.append(c)
-
+            print "    --", "unassigned: ", unassigned_constraints
             var[2] = len(unassigned_constraints)
 
         to_tie_break.sort(key=lambda t: int(t[2]), reverse=True)
+        print to_tie_break
+        max_val = to_tie_break[0][2]
+        to_alphabetize = []
 
-        return to_tie_break[0][0]
+        for t in to_tie_break:
+            if t[2] == max_val:
+                to_alphabetize.append(t)
+
+        to_alphabetize.sort(key=lambda t: t[0])
+
+        return to_alphabetize[0][0]
 
 
 
-    def order_domain_values(self, var):
+    def order_domain_values(self, var, assignments):
         # self.variables[var] is (domain, remainingDomain)
         # we return the remaining domain
         # (for now just as-is without ordering)
         constraints = self.get_constraints(var)
-        domains = self.variables[var][1]
+        domain = self.variables[var][1]
 
+        unassigned_constraints = []
+        for c in constraints:
+            if c[1][0] not in assignments and c[1][1] not in assignments:
+                unassigned_constraints.append(c)
+
+        test_assignments = assignments.copy()
         to_pick_from = []
 
-        return self.variables[var][1]
+        for val in domain:
+            test_assignments[var] = val
+            sum_for_this_val = 0
+            for u in unassigned_constraints:
+                index_of_original = u[1].index(var)
+                index_of_other = 0 if index_of_original is 1 else 1
+                original_domain_of_this_variable = self.variables[u[1][index_of_other]][0]
+                remaining_domain_for_this_variable = []
+
+                for v in original_domain_of_this_variable:
+                    if self.check_consistency(u[1][index_of_other], v, test_assignments):
+                        remaining_domain_for_this_variable.append(v)
+
+                sum_for_this_val += len(remaining_domain_for_this_variable)
+            to_pick_from.append((val, sum_for_this_val))
+
+        to_pick_from.sort(key=lambda t: t[1])
+        return to_pick_from
 
 
     def check_consistency(self, var, value, assignments):
@@ -133,7 +164,7 @@ class Problem:
             index_of_other_var = 0 if index_of_var is 1 else 1
             other_var = con[1][index_of_other_var]
 
-            if con[1][1] in assignments:
+            if con[1][index_of_other_var] in assignments:
                 to_pass = [0, 0]
                 to_pass[index_of_var] = value
                 to_pass[index_of_other_var] = assignments[other_var]
@@ -185,6 +216,6 @@ class Problem:
         print str(self.call_depth + 1) + '.',
 
         for a in assignments:
-            print str(a) + '=' + str(assignments[a]) + ',',
+            print str(a[0]) + '=' + str(a[1]) + ',',
 
         print status
