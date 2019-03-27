@@ -38,7 +38,6 @@ class Problem:
         # base case
         if len(assignments) == len(self.variables):
             if self.goalTest(assignments):
-                # if self.call_depth < 30:
                 self.print_assignments(assignments_to_print, 'solution')
                 return assignments
             else:
@@ -60,8 +59,8 @@ class Problem:
                         if result is not False:
                             return result
                     else:
-                        for v in self.variables:
-                            self.variables[v][1] = self.variables[v][0][:]
+                        for variable in self.variables:
+                            self.variables[variable][1] = self.variables[variable][0][:]
                         self.print_assignments(assignments_to_print, 'failure')
                         self.call_depth += 1
                 else:
