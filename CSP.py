@@ -1,4 +1,4 @@
-class Problem:
+class CSP:
     def __init__(self, forward_checking):
         self.variables = {}
         self.constraints = []

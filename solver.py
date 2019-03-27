@@ -1,5 +1,5 @@
 import sys
-from Problem import Problem
+from CSP import CSP
 args = sys.argv[:]
 
 if not len(args) == 4:
@@ -23,7 +23,7 @@ varFileName = args[1]           # name of var file
 constraintFileName = args[2]    # name of constraint file
 checkingMethod = True if args[3] == 'fc' else False    # name of checking method
 
-problem = Problem(forward_checking=checkingMethod)
+problem = CSP(forward_checking=checkingMethod)
 
 # open and add variable from var file to the problem
 varFile = open(varFileName, 'r')
@@ -39,7 +39,7 @@ varFile.close()
 
 # define the functions for each of the possible constraints to check whether constraint is held
 # they all take an array of values to apply to the two variables in the constraint
-# look at check_consistency() in Problem.py
+# look at check_consistency() in CSP.py
 def equals(arr):
     return arr[0] == arr[1]
 
